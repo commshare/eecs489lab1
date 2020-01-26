@@ -136,6 +136,7 @@ imgdb_sockinit()
     exit(1);
   }
 
+  //把socket做bind到any地址的连接？TODO 
   memset((char *) &self, 0, sizeof(struct sockaddr_in));
   self.sin_family = AF_INET;
   self.sin_addr.s_addr = INADDR_ANY;
@@ -147,12 +148,14 @@ imgdb_sockinit()
     exit(1);
   }
 
+  //对这个socket进行监听
   /* listen on socket */
   if (listen(sd, NETIMG_QLEN) < 0) {
     fprintf(stderr, "Failed to listen on socket.");
     exit(1);
   }
 
+   //获取实际分配个i这个socket的端口号？TODO 
   /*
    * Obtain the ephemeral port assigned by the OS kernel to this
    * socket and store it in the local variable "self".
@@ -172,7 +175,8 @@ imgdb_sockinit()
     fprintf(stderr, "Failed to get hostname.");
     exit(1);
   }
-
+  
+  //imgdb address is pb6a80114.nigtnt01.ap.so-net.ne.jp:54956 这个是打印结果
   /* inform user which port this peer is listening on */
   fprintf(stderr, "imgdb address is %s:%d\n", sname, ntohs(self.sin_port));
 
@@ -198,6 +202,7 @@ imgdb_accept(int sd)
    * Fill out the rest of this function.
    * Accept the new connection.
    * Use the variable "td" to hold the new connected socket.
+   * 通过socket获取到当前连接到的客户端的地址
   */
   int len = sizeof(struct sockaddr_in);
   td = accept(sd, (struct sockaddr *) &client, (socklen_t *) &len);

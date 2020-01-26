@@ -57,7 +57,7 @@ netimg_usage(char *progname)
   exit(1);
 }
 
-/*
+/* 解析命令行参数
  * netimg_args: parses command line args.
  *
  * Returns 0 on success or 1 on failure.  On successful return,
@@ -67,6 +67,7 @@ netimg_usage(char *progname)
  * points to the name of the image to search for. The variable "*vers"
  * points to the version used for query packet. Nothing else is modified.
  */
+//服务端名字 服务端端口（网络字节序），图片名字 ，查询包的版本号
 int
 netimg_args(int argc, char *argv[], char **sname, u_short *port, char **imagename, char *vers)
 {
@@ -127,7 +128,7 @@ netimg_sockinit(char *sname, u_short port)
   net_assert(err, "netimg: WSAStartup");
 #endif
 
-  /* 
+  /* 创建一个新的tcp socket ，句柄存在全局的sd里 
    * create a new TCP socket, store the socket in the global variable sd
   */
     sd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -138,23 +139,26 @@ netimg_sockinit(char *sname, u_short port)
       exit(1);
     }
 
-  /* 
+  /* 通过服务端的名字 获取服务端的ip地址 ，使用ip地址和端口来初始化socket
    * obtain the server's IPv4 address from sname and initialize the
    *  socket address with server's address and port number . 
   */
+ //服务端的地址 存储在sockaddr_in这个结构体里
     struct sockaddr_in server;
     size_t size_server = sizeof(server);
 
     memset((char *) &server, 0, size_server);
-    server.sin_family = AF_INET;
-    server.sin_port = port;
+    server.sin_family = AF_INET; //协议簇
+    server.sin_port = port; //端口
 
+   //获取ip地址，通过域名的方式
     struct hostent *sp = gethostbyname(sname);
-    memcpy(&server.sin_addr, sp->h_addr, sp->h_length);
+    memcpy(&server.sin_addr, sp->h_addr, sp->h_length);//ip地址
 
-  /* connect to server */
+   //本地tcp socket 连接到服务器的地址 ， 建立tcp连接
+    /* connect to server */
     int result = connect(sd, (struct sockaddr *) &server, size_server);
-    
+    //建立连接失败
     // Fail due to bad connection
     if (result == -1) {
         fprintf(stderr, "Client couldn't connect to server socket.");
@@ -162,7 +166,7 @@ netimg_sockinit(char *sname, u_short port)
     }
 }
 
-/*
+/* 数据包查询协议 iqry_t
  * netimg_sendqry: send a query for provided imagename to connected
  * server (using the global variable "sd" for the connected socket).
  * Query is of type iqry_t, defined in netimg.h.  Set the iq_vers
@@ -179,6 +183,7 @@ netimg_sendqry(char *imagename, char vers)
 
   iqry.iq_vers = vers;
   strcpy(iqry.iq_name, imagename); 
+  //向本地连接到了远端发服务器的socket发送一个查询数据包
   bytes = send(sd, (char *) &iqry, sizeof(iqry_t), 0);
   if (bytes != sizeof(iqry_t)) {
     return(0);
@@ -187,7 +192,7 @@ netimg_sendqry(char *imagename, char vers)
   return(1);
 }
 
-/*
+/* 图像协议 imsg_t
  * netimg_recvimsg: receive an imsg_t packet from server and store it
  * in the global variable imsg. Return NETIMG_OK if image received
  * successfully.  Otherwise return NETIMG_EVERS if packet is of the
@@ -203,11 +208,10 @@ netimg_recvimsg()
    * Task 1: YOUR CODE HERE 
    * netimg_recvimsg: receive an imsg_t packet from server and store it 
    * in the global variable imsg.
-   * If message is of a wrong version number, return NETIMG_EVERS.
-   * If message is of the wrong size, return NETIMG_ESIZE.
+   * If message is of a wrong version number, return NETIMG_EVERS.    //消息的的版本不对，
+   * If message is of the wrong size, return NETIMG_ESIZE. 消息的大小不对
    * Convert the integer fields of imsg back to host byte order.
   */
-
     // Read imsg packet
     size_t buff_size = sizeof(imsg_t);
     int bytes_read = recv(sd, (char *) &imsg, buff_size, 0);
@@ -230,11 +234,13 @@ netimg_recvimsg()
         return NETIMG_EVERS;
     }
 
+    //消息的几个字段要转为主机序列 TODO 
     // Convert fields to host byte order
     imsg.im_format = ntohs(imsg.im_format);
     imsg.im_width = ntohs(imsg.im_width);
     imsg.im_height = ntohs(imsg.im_height);
 
+   //有图像，读取图像
   if (imsg.im_found) {
     img_dsize = (double) (imsg.im_height*imsg.im_width*(u_short)imsg.im_depth);
     net_assert((img_dsize > (double) LONG_MAX), "netimg: image too big");
@@ -249,7 +255,7 @@ netimg_recvimsg()
 /* Callback functions for GLUT */
 
 /*
- * netimg_recvimage: called by GLUT when idle
+ * netimg_recvimage: called by GLUT when idle 从网络尽可能接收图片数据
  * On each call, receive as much of the image is available on the network and
  * store it in global variable "image" at offset "img_offset" from the
  * start of the buffer.  The global variable "img_offset" must be updated

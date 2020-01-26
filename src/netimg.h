@@ -17,6 +17,7 @@
  * Authors: Sugih Jamin (jamin@eecs.umich.edu)
  *
 */
+// client to recv img and render it 
 #ifndef __NETIMG_H__
 #define __NETIMG_H__
 
@@ -29,10 +30,11 @@
 /* BEGIN SOLUTION */
 #define PBO 0
 /* END SOLUTION */
-
+//发送图像的大小
 #define NETIMG_WIDTH  640
 #define NETIMG_HEIGHT 480
 
+//图像名字数组大小，包括了结尾的NULL字符，总共256个字节
 #define NETIMG_MAXFNAME    256  // including terminating NULL
 #define NETIMG_PORTSEP     ':'
 
@@ -49,6 +51,7 @@
 #define NETIMG_MSS      1440
 #define NETIMG_USLEEP 250000    // 250 ms
 
+//图像查询数据结构
 typedef struct {               
   unsigned char iq_vers;
   char iq_name[NETIMG_MAXFNAME];  // must be NULL terminated
